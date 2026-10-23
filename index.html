@@ -145,6 +145,21 @@
     font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:16px; color:var(--ink);
   }
   .money-box:focus-within{outline:2px solid var(--accent);}
+  .money-box.ro{background:#E6ECF3; opacity:.85;}
+  .money-box.ro input{color:var(--ink-soft); cursor:default;}
+  .money-box.ro:focus-within{outline:none;}
+  .nota-ro{font-size:11.5px; color:var(--ink-soft); margin:-4px 2px 14px;}
+  .sinpago{
+    display:flex; align-items:center; gap:10px; margin:0 0 14px; padding:11px 12px;
+    background:var(--bg); border-radius:10px; font-size:13.5px; font-weight:600; cursor:pointer;
+  }
+  .sinpago input{width:18px; height:18px; accent-color:var(--accent); margin:0; flex:none;}
+  .sinpago small{display:block; font-weight:500; font-size:11.5px; color:var(--ink-soft);}
+  .stock-ro{
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:15px; text-align:center;
+    background:#E6ECF3; border-radius:8px; padding:9px 2px; color:var(--ink);
+  }
+  .stock-ro.low{color:var(--red);}
   .money-box input:focus{outline:none;}
 
   .stepper-center{display:flex; justify-content:center; margin:6px 0 16px;}
@@ -285,6 +300,7 @@
   }
   .tag.venta{background:var(--venta-soft); color:var(--venta-dark);}
   .tag.compra{background:#F7E1DF; color:var(--red);}
+  .tag.stock{background:var(--accent-soft); color:var(--accent-dark);}
 
   /* ---- Resumen ---- */
   .hero{
@@ -356,10 +372,6 @@
       </div>
       <div class="two">
         <div class="field">
-          <label for="pStock">Stock actual</label>
-          <div class="money-box"><input type="text" id="pStock" inputmode="numeric" placeholder="0"></div>
-        </div>
-        <div class="field">
           <label for="pCosto">Costo</label>
           <div class="money-box"><span>$</span><input type="text" id="pCosto" inputmode="numeric" placeholder="0"></div>
         </div>
@@ -368,6 +380,7 @@
           <div class="money-box"><span>$</span><input type="text" id="pPrecio" inputmode="numeric" placeholder="0"></div>
         </div>
       </div>
+      <div class="nota-ro">El stock se carga desde Movimientos → Cargar compras.</div>
       <button class="add-btn" id="btnGuardarProd">Guardar producto</button>
       <button class="ghost-btn" id="btnCancelarProd">Cancelar</button>
     </div>
@@ -409,13 +422,14 @@
       <div class="two">
         <div class="field">
           <label for="vCosto">Costo c/u</label>
-          <div class="money-box"><span>$</span><input type="text" id="vCosto" inputmode="numeric" placeholder="0"></div>
+          <div class="money-box ro"><span>$</span><input type="text" id="vCosto" inputmode="numeric" placeholder="0" readonly tabindex="-1"></div>
         </div>
         <div class="field">
           <label for="vPrecio">Precio venta c/u</label>
-          <div class="money-box"><span>$</span><input type="text" id="vPrecio" inputmode="numeric" placeholder="0"></div>
+          <div class="money-box ro"><span>$</span><input type="text" id="vPrecio" inputmode="numeric" placeholder="0" readonly tabindex="-1"></div>
         </div>
       </div>
+      <div class="nota-ro">Costo y precio se toman de Productos.</div>
       <div class="preview">
         <div class="p-col"><div class="p-label">Total</div><div class="p-value" id="vTotal">$ 0</div></div>
         <div class="p-col"><div class="p-label">Ganancia</div><div class="p-value" id="vGanancia">$ 0</div></div>
@@ -444,12 +458,16 @@
           <button type="button" id="cMas" aria-label="Más">+</button>
         </div>
       </div>
-      <div class="field">
+      <label class="sinpago" for="cSinPago">
+        <input type="checkbox" id="cSinPago">
+        <span>Sin pago (stock inicial / ya lo tenía)<small>Suma stock sin descontar dinero de la caja.</small></span>
+      </label>
+      <div class="field" id="cCostoField">
         <label for="cCosto">Costo c/u</label>
         <div class="money-box"><span>$</span><input type="text" id="cCosto" inputmode="numeric" placeholder="0"></div>
       </div>
       <div class="preview">
-        <div class="p-col"><div class="p-label">Total pagado</div><div class="p-value" id="cTotal">$ 0</div></div>
+        <div class="p-col"><div class="p-label" id="cTotalLabel">Total pagado</div><div class="p-value" id="cTotal">$ 0</div></div>
       </div>
       <button class="add-btn compra" id="btnCompra">Registrar compra</button>
       <button class="ghost-btn" id="btnCancelarCompra">Cancelar</button>
@@ -568,8 +586,7 @@
 
   // ================= PRODUCTOS =================
   const pNombre = $('pNombre'), pCosto = $('pCosto'), pPrecio = $('pPrecio');
-  const pStock = $('pStock');
-  bindMoney(pStock); bindMoney(pCosto); bindMoney(pPrecio);
+  bindMoney(pCosto); bindMoney(pPrecio);
 
   function toggleFormProd(abrir){
     $('formProd').style.display = abrir ? 'block' : 'none';
@@ -583,17 +600,18 @@
     const nombre = pNombre.value.trim();
     if(!nombre){ showToast('Poné el nombre del producto'); pNombre.focus(); return; }
     if(productos.some(p => p.nombre.toLowerCase() === nombre.toLowerCase())){ showToast('Ese producto ya existe'); return; }
-    productos.push({ id: uid(), nombre, stock0: soloNum(pStock.value), costo: soloNum(pCosto.value), precio: soloNum(pPrecio.value) });
+    productos.push({ id: uid(), nombre, stock0: 0, costo: soloNum(pCosto.value), precio: soloNum(pPrecio.value) });
     productos.sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
     saveProds();
-    pNombre.value = ''; pStock.value = ''; pCosto.value = ''; pPrecio.value = '';
+    pNombre.value = ''; pCosto.value = ''; pPrecio.value = '';
     toggleFormProd(false);
     renderAll();
     showToast('Producto guardado');
   });
 
   function textoGanancia(p){
-    return `Ganancia ${money(p.precio - p.costo)} c/u`;
+    const pct = p.precio ? Math.round((p.precio - p.costo) / p.precio * 100) : 0;
+    return `Ganancia ${money(p.precio - p.costo)} c/u · ${pct}%`;
   }
 
   // ---- Stock: stock inicial + compras − ventas ----
@@ -623,7 +641,7 @@
           <button class="x-btn" data-delprod="${p.id}" aria-label="Eliminar producto">✕</button>
         </div>
         <div class="pr-fields">
-          <div><span class="pr-lab">Stock</span><div class="pr-field ${st <= 0 ? 'low' : ''}"><input type="text" inputmode="numeric" data-k="stock" value="${st}" aria-label="Stock de ${nom}"></div></div>
+          <div><span class="pr-lab">Stock</span><div class="stock-ro ${st <= 0 ? 'low' : ''}" aria-label="Stock de ${nom}">${st}</div></div>
           <div><span class="pr-lab">Costo</span><div class="pr-field"><span>$</span><input type="text" inputmode="numeric" data-k="costo" value="${fmtMiles(p.costo)}" aria-label="Costo de ${nom}"></div></div>
           <div><span class="pr-lab">Precio</span><div class="pr-field"><span>$</span><input type="text" inputmode="numeric" data-k="precio" value="${fmtMiles(p.precio)}" aria-label="Precio de ${nom}"></div></div>
         </div>
@@ -639,16 +657,6 @@
     const row = inp.closest('.prod-row');
     const p = productos.find(x => x.id === row.dataset.id);
     if(!p) return;
-    if(inp.dataset.k === 'stock'){
-      // Lo que se escribe es el stock real: se ajusta el stock inicial para que coincida
-      const digitos = inp.value.replace(/\D/g, '').slice(0, 5);
-      const objetivo = Number(digitos || 0);
-      inp.value = digitos === '' ? '' : String(objetivo);
-      p.stock0 = objetivo - netoDe(p);
-      inp.closest('.pr-field').classList.toggle('low', objetivo <= 0);
-      saveProds();
-      return;
-    }
     const v = Math.min(soloNum(inp.value), 99999999);
     inp.value = fmtMiles(v);
     p[inp.dataset.k] = v;
@@ -786,8 +794,7 @@
     g.classList.toggle('neg', precio < costo);
     actualizarStockVenta();
   }
-  bindMoney(vCosto, previewVenta); bindMoney(vPrecio, previewVenta);
-  bindStepper(vCant, 'vMenos', 'vMas', previewVenta);
+    bindStepper(vCant, 'vMenos', 'vMas', previewVenta);
   function actualizarStockVenta(){
     const el = $('vStock');
     const p = (typeof comboV !== 'undefined') ? comboV.producto() : null;
@@ -810,18 +817,18 @@
       vCosto.value = fmtMiles(p.costo);
       vPrecio.value = fmtMiles(p.precio);
       previewVenta();
-    } else if(!p){ vUlt = null; }
+    } else if(!p){ vUlt = null; vCosto.value = ''; vPrecio.value = ''; previewVenta(); }
     actualizarStockVenta();
   }});
   $('btnVenta').addEventListener('click', () => {
     const p = comboV.producto();
-    const precio = soloNum(vPrecio.value);
     if(!p){ showToast('Elegí un producto de la lista'); $('vProd').focus(); return; }
-    if(!precio){ showToast('Falta el precio de venta'); vPrecio.focus(); return; }
+    const precio = p.precio || 0;
+    if(!precio){ showToast('Cargá el precio en Productos'); return; }
     movs.unshift({
       id: uid(), fecha: new Date().toISOString(), tipo: 'venta',
       productoId: p.id, detalle: p.nombre,
-      cantidad: cantidad(vCant), costo: soloNum(vCosto.value), precio
+      cantidad: cantidad(vCant), costo: p.costo || 0, precio
     });
     saveMovs();
     comboV.reset(); vUlt = null; vCant.value = '1'; vCosto.value = ''; vPrecio.value = '';
@@ -834,7 +841,14 @@
   // ---- Compra ----
   const cCant = $('cCant'), cCosto = $('cCosto');
   let cUlt = null;
-  function previewCompra(){ $('cTotal').textContent = money(cantidad(cCant) * soloNum(cCosto.value)); }
+  const cSinPago = $('cSinPago');
+  function previewCompra(){
+    const sin = cSinPago.checked;
+    $('cCostoField').style.display = sin ? 'none' : 'block';
+    $('cTotalLabel').textContent = sin ? 'Se suma al stock (sin pago)' : 'Total pagado';
+    $('cTotal').textContent = sin ? '$ 0' : money(cantidad(cCant) * soloNum(cCosto.value));
+  }
+  cSinPago.addEventListener('change', previewCompra);
   bindMoney(cCosto, previewCompra);
   bindStepper(cCant, 'cMenos', 'cMas', previewCompra);
   const comboC = crearCombo({ wrap:'cCombo', input:'cProd', lista:'cComboLista', toggle:'cComboToggle', cambio(){
@@ -847,16 +861,17 @@
   }});
   $('btnCompra').addEventListener('click', () => {
     const p = comboC.producto();
-    const costo = soloNum(cCosto.value);
+    const sinPago = cSinPago.checked;
+    const costo = sinPago ? 0 : soloNum(cCosto.value);
     if(!p){ showToast('Elegí un producto de la lista'); $('cProd').focus(); return; }
-    if(!costo){ showToast('Falta el costo'); cCosto.focus(); return; }
+    if(!sinPago && !costo){ showToast('Falta el costo (o marcá "Sin pago")'); cCosto.focus(); return; }
     movs.unshift({
       id: uid(), fecha: new Date().toISOString(), tipo: 'compra',
       productoId: p.id, detalle: p.nombre,
-      cantidad: cantidad(cCant), costo, precio: 0
+      cantidad: cantidad(cCant), costo, precio: 0, sinPago
     });
     saveMovs();
-    comboC.reset(); cUlt = null; cCant.value = '1'; cCosto.value = '';
+    comboC.reset(); cUlt = null; cCant.value = '1'; cCosto.value = ''; cSinPago.checked = false;
     previewCompra();
     cerrarFormularios();
     renderAll();
@@ -920,12 +935,12 @@
       const titulo = esProd ? escapeHtml(m.detalle) : escapeHtml(m.nota || '');
       let sub = '';
       if(m.tipo === 'venta') sub = `${m.cantidad} x ${money(m.precio)} · costo ${money(m.costo)} c/u`;
-      else if(m.tipo === 'compra') sub = `${m.cantidad} x ${money(m.costo)}`;
+      else if(m.tipo === 'compra') sub = m.sinPago ? `${m.cantidad} unidades · sin pago` : `${m.cantidad} x ${money(m.costo)}`;
       return `
         <tr>
           <td class="m-fecha">${fecha}</td>
           <td>
-            <div class="m-name"><span class="tag ${m.tipo}">${ETIQ[m.tipo] || m.tipo}</span>${titulo}</div>
+            <div class="m-name"><span class="tag ${m.sinPago ? 'stock' : m.tipo}">${m.sinPago ? 'Stock' : (ETIQ[m.tipo] || m.tipo)}</span>${titulo}</div>
             ${sub ? `<div class="m-sub">${sub}</div>` : ''}
           </td>
           <td class="r"><span class="m-monto ${m.tipo}">${SIGNO[m.tipo] || ''} ${money(montoMov(m))}</span></td>
@@ -1019,7 +1034,7 @@
       pendiente = { tipo:'mov', id: bm.dataset.delmov };
       const m = movs.find(x => x.id === pendiente.id);
       $('confirmMsg').textContent = !m ? '¿Eliminar este movimiento?'
-        : (m.tipo === 'venta' || m.tipo === 'compra') ? `¿Eliminar ${m.tipo === 'venta' ? 'la venta' : 'la compra'} de "${m.detalle}"?`
+        : (m.tipo === 'venta' || m.tipo === 'compra') ? `¿Eliminar ${m.tipo === 'venta' ? 'la venta' : (m.sinPago ? 'la carga de stock' : 'la compra')} de "${m.detalle}"?`
         : `¿Eliminar ${m.tipo === 'retiro' ? 'el retiro' : 'el aporte'} de ${money(m.monto || 0)}?`;
     } else if(bp){
       pendiente = { tipo:'prod', id: bp.dataset.delprod };
