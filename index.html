@@ -275,6 +275,27 @@
 
   .prod-row .pr-bottom{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px;}
   .prod-row .pr-bottom .pr-gain{margin-top:0;}
+  .prod-row .pr-cat{display:flex; align-items:center; gap:8px; min-width:0;}
+  .prod-row .pr-catname{
+    font-size:12.5px; font-weight:600; color:var(--ink-soft); max-width:120px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .prod-row .pr-nameinput{
+    flex:1; min-width:0; border:1.5px solid var(--line); background:var(--bg); border-radius:8px;
+    padding:8px 10px; font-family:'Inter',sans-serif; font-weight:700; font-size:15px; color:var(--ink);
+  }
+  .prod-row .pr-nameinput:focus{outline:none; border-color:var(--accent);}
+  .prod-row .pr-editrow{display:flex; align-items:center; gap:10px; margin-top:10px;}
+  .prod-row .pr-editrow .pr-spacer{flex:1;}
+  .prod-row .pr-editrow select{
+    flex:1; min-width:0; font-family:'Inter',sans-serif; font-size:13.5px; font-weight:600; color:var(--ink);
+    background:var(--bg); border:none; border-radius:999px; padding:8px 12px;
+  }
+  .prod-row .pr-edit.gris{color:var(--ink-soft);}
+  .prod-row .pr-edit{
+    border:none; background:none; color:var(--accent); font-family:'Inter',sans-serif;
+    font-weight:700; font-size:12.5px; cursor:pointer; padding:4px 2px;
+  }
   .prod-row .pr-cat select{
     font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600; color:var(--ink-soft);
     background:var(--bg); border:none; border-radius:999px; padding:6px 10px; max-width:150px;
@@ -745,7 +766,9 @@
   }
   function stockDe(p){ return (p.stock0 || 0) + netoDe(p); }
 
-  function fillCatSelects(){
+  let editandoProd = null; // id del producto que se está editando (nombre y categoría)
+
+    function fillCatSelects(){
     const sel = $('pCat'), v = sel.value;
     sel.innerHTML = '<option value="">Sin categoría</option>' +
       categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('');
@@ -756,12 +779,21 @@
   function filaProd(p){
     const st = stockDe(p);
     const nom = escapeHtml(p.nombre);
+    const editando = editandoProd === p.id;
     const opts = '<option value="">Sin categoría</option>' + categorias.map(c =>
       `<option value="${c.id}" ${c.id === p.categoriaId ? 'selected' : ''}>${escapeHtml(c.nombre)}</option>`).join('');
+    const catActual = (categorias.find(c => c.id === p.categoriaId) || {}).nombre || 'Sin categoría';
+    const titulo = editando
+      ? `<input type="text" class="pr-nameinput" data-nombre maxlength="40" value="${nom}" aria-label="Nombre del producto" autocomplete="off" autocapitalize="sentences">`
+      : `<span class="pr-name">${nom}</span>`;
+    const derecha = editando ? '' :
+      `<div class="pr-cat">${categorias.length ? `<span class="pr-catname">${escapeHtml(catActual)}</span>` : ''}<button type="button" class="pr-edit" data-editprod="${p.id}">Editar</button></div>`;
+    const filaEdicion = !editando ? '' :
+      `<div class="pr-editrow">${categorias.length ? `<select data-cat aria-label="Categoría de ${nom}">${opts}</select>` : '<span class="pr-spacer"></span>'}<button type="button" class="pr-edit" data-saveprod="${p.id}">Guardar</button><button type="button" class="pr-edit gris" data-cancelprod="${p.id}">Cancelar</button></div>`;
     return `
     <div class="prod-row" data-id="${p.id}">
       <div class="pr-top">
-        <span class="pr-name">${nom}</span>
+        ${titulo}
         <button class="x-btn" data-delprod="${p.id}" aria-label="Eliminar producto">✕</button>
       </div>
       <div class="pr-fields">
@@ -771,8 +803,9 @@
       </div>
       <div class="pr-bottom">
         <div class="pr-gain ${p.precio - p.costo < 0 ? 'neg' : ''}">${textoGanancia(p)}</div>
-        ${categorias.length ? `<div class="pr-cat"><select data-cat aria-label="Categoría de ${nom}">${opts}</select></div>` : ''}
+        ${derecha}
       </div>
+      ${filaEdicion}
     </div>`;
   }
 
@@ -1295,6 +1328,12 @@
 
   // Plegar / desplegar grupos y cambiar la categoría de un producto
   $('listaProd').addEventListener('click', e => {
+    const ed = e.target.closest('[data-editprod]');
+    if(ed){ editandoProd = ed.dataset.editprod; renderProductos(); return; }
+    const ca = e.target.closest('[data-cancelprod]');
+    if(ca){ editandoProd = null; renderProductos(); return; }
+    const sv = e.target.closest('[data-saveprod]');
+    if(sv){ guardarEdicionProd(sv.closest('.prod-row')); return; }
     const h = e.target.closest('[data-grp]');
     if(!h) return;
     const id = h.dataset.grp;
@@ -1302,15 +1341,44 @@
     saveCol();
     renderProductos();
   });
-  $('listaProd').addEventListener('change', e => {
-    const sel = e.target.closest('select[data-cat]');
-    if(!sel) return;
-    const p = productos.find(x => x.id === sel.closest('.prod-row').dataset.id);
-    if(!p) return;
-    p.categoriaId = sel.value;
-    saveProds();
-    renderProductos();
+  $('listaProd').addEventListener('keydown', e => {
+    if(e.key === 'Enter' && e.target.matches('input[data-nombre]')){
+      e.preventDefault();
+      guardarEdicionProd(e.target.closest('.prod-row'));
+    }
   });
+
+  // Guardar nombre y categoría de un producto
+  function guardarEdicionProd(row){
+    const p = productos.find(x => x.id === row.dataset.id);
+    if(!p) return;
+    const nombre = row.querySelector('input[data-nombre]').value.trim();
+    if(!nombre){ showToast('El nombre no puede quedar vacío'); return; }
+    if(productos.some(x => x.id !== p.id && normBusqueda(x.nombre) === normBusqueda(nombre))){
+      showToast('Ese producto ya existe');
+      return;
+    }
+    if(nombre !== p.nombre){
+      const viejo = normBusqueda(p.nombre);
+      // Los movimientos ya cargados pasan a mostrar el nombre nuevo
+      movs.forEach(m => {
+        if((m.tipo === 'venta' || m.tipo === 'compra') &&
+           (m.productoId === p.id || (!m.productoId && normBusqueda(m.detalle) === viejo))){
+          m.productoId = p.id;
+          m.detalle = nombre;
+        }
+      });
+      p.nombre = nombre;
+      saveMovs();
+    }
+    const sel = row.querySelector('select[data-cat]');
+    if(sel) p.categoriaId = sel.value;
+    productos.sort((x, y) => x.nombre.localeCompare(y.nombre, 'es'));
+    editandoProd = null;
+    saveProds();
+    renderAll();
+    showToast('Cambios guardados');
+  }
 
   // Buscador de productos
   const buscaProd = $('buscaProd');
