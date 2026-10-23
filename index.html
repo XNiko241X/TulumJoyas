@@ -56,10 +56,18 @@
   .app{max-width:480px; margin:0 auto; padding:16px 16px 0;}
   header.top{
     padding:calc(14px + env(safe-area-inset-top)) 4px 6px;
-    display:flex; align-items:baseline; justify-content:space-between;
+    display:flex; align-items:center; justify-content:space-between;
   }
+  header.top .brand{display:flex; align-items:baseline; gap:8px;}
   header.top h1{font-weight:800; font-size:22px; margin:0; letter-spacing:-0.01em;}
   header.top .biz-name{font-size:12px; color:var(--ink-soft); font-weight:600;}
+  .cfg-btn{
+    width:36px; height:36px; border-radius:999px; border:none; background:var(--surface);
+    color:var(--ink-soft); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;
+    box-shadow:0 1px 2px rgba(27,42,58,0.06);
+  }
+  .cfg-btn svg{width:18px; height:18px;}
+  .cfg-btn:active{background:var(--accent-soft); color:var(--accent-dark);}
 
   nav.tabs{
     display:flex; background:var(--surface); border-radius:999px; padding:4px;
@@ -161,6 +169,11 @@
   }
   .stock-ro.low{color:var(--red);}
   .money-box input:focus{outline:none;}
+  .money-box select{
+    flex:1; min-width:0; border:none; background:transparent; padding:11px 6px;
+    font-family:'Inter',sans-serif; font-weight:700; font-size:16px; color:var(--ink);
+  }
+  .money-box select:focus{outline:none;}
 
   .stepper-center{display:flex; justify-content:center; margin:6px 0 16px;}
   .stepper{display:flex; align-items:center; background:var(--bg); border-radius:999px; padding:4px;}
@@ -260,6 +273,75 @@
   .prod-row .pr-gain{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-soft); margin-top:8px;}
   .prod-row .pr-gain.neg{color:var(--red);}
 
+  .prod-row .pr-bottom{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px;}
+  .prod-row .pr-bottom .pr-gain{margin-top:0;}
+  .prod-row .pr-cat select{
+    font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600; color:var(--ink-soft);
+    background:var(--bg); border:none; border-radius:999px; padding:6px 10px; max-width:150px;
+  }
+
+  /* ---- Buscador de productos (mismo estilo que el selector de ventas) ---- */
+  .buscar{position:relative; margin-bottom:14px;}
+  .buscar input{
+    display:block; width:100%; margin:0; border:1.5px solid var(--line); background:var(--surface);
+    border-radius:999px; padding:12px 44px 12px 18px; font-family:'Inter',sans-serif;
+    font-weight:700; font-size:16px; color:var(--ink);
+  }
+  .buscar input:focus{border-color:var(--accent); outline:none;}
+  .buscar .buscar-ico, .buscar .buscar-x{
+    position:absolute; top:0; right:0; height:100%; width:44px; border:none; background:none;
+    color:var(--ink-soft); display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .buscar .buscar-ico{pointer-events:none;}
+  .buscar .buscar-x{cursor:pointer; font-size:16px; color:var(--ink-soft);}
+  .buscar [hidden]{display:none;}
+  .buscar svg{width:18px; height:18px;}
+
+  /* ---- Grupos por categoría ---- */
+  .grp{margin-bottom:10px;}
+  .grp-head{
+    width:100%; display:flex; align-items:center; gap:8px; border:none; background:transparent;
+    padding:8px 4px; margin-bottom:4px; cursor:pointer; font-family:'Inter',sans-serif; color:var(--ink); text-align:left;
+  }
+  .grp-head svg{width:16px; height:16px; color:var(--ink-soft); transition:transform .15s ease; flex:none;}
+  .grp-head.cerrada svg{transform:rotate(-90deg);}
+  .grp-name{flex:1; min-width:0; font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:.06em;}
+  .grp-n{
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12px; color:var(--accent-dark);
+    background:var(--accent-soft); border-radius:999px; padding:2px 9px;
+  }
+  .grp-vacio{font-size:12.5px; color:var(--ink-soft); padding:4px 8px 10px;}
+
+  /* ---- Hoja de configuración ---- */
+  .sheet{
+    display:none; position:fixed; left:0; right:0; bottom:0; top:0; background:transparent; z-index:80;
+    align-items:flex-start; justify-content:center;
+  }
+  .sheet.show{display:flex;}
+  .sheet-box{
+    background:var(--surface); width:100%; max-width:480px; border-radius:20px;
+    padding:18px; max-height:100%; overflow-y:auto; box-shadow:0 10px 26px rgba(27,42,58,0.18);
+  }
+  .sheet-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
+  .sheet-head .t{font-weight:800; font-size:16px;}
+  .sheet-box .nota-ro{margin:0 0 14px;}
+  .cat-add{display:flex; gap:8px; margin-bottom:14px;}
+  .cat-add input{
+    flex:1; min-width:0; border:1.5px solid var(--line); background:var(--bg); border-radius:10px;
+    padding:11px 12px; font-family:'Inter',sans-serif; font-weight:700; font-size:15px; color:var(--ink);
+  }
+  .cat-add input:focus, .cat-row input:focus{outline:none; border-color:var(--accent);}
+  .cat-add button{
+    border:none; background:var(--accent); color:#fff; border-radius:10px; padding:0 16px;
+    font-family:'Inter',sans-serif; font-weight:700; font-size:14px; cursor:pointer;
+  }
+  .cat-row{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .cat-row input{
+    flex:1; min-width:0; border:1.5px solid transparent; background:var(--bg); border-radius:10px;
+    padding:10px 12px; font-family:'Inter',sans-serif; font-weight:700; font-size:15px; color:var(--ink);
+  }
+  .cat-row .cat-n{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); min-width:22px; text-align:right;}
+
   .stock-info{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); margin-top:8px; padding-left:4px;}
   .stock-info:empty{display:none;}
   .stock-info.warn{color:var(--red); font-weight:700;}
@@ -350,8 +432,13 @@
 <body>
 <div class="app">
   <header class="top">
-    <h1>Tulum</h1>
-    <span class="biz-name">Joyas</span>
+    <div class="brand">
+      <h1>Tulum</h1>
+      <span class="biz-name">Joyas</span>
+    </div>
+    <button class="cfg-btn" id="btnCfg" aria-label="Configurar categorías">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+    </button>
   </header>
 
   <nav class="tabs">
@@ -370,6 +457,10 @@
         <label for="pNombre">Nombre</label>
         <input type="text" id="pNombre" placeholder="Ej: Anillo plata" autocomplete="off" autocapitalize="sentences">
       </div>
+      <div class="field" id="pCatField" style="display:none;">
+        <label for="pCat">Categoría</label>
+        <div class="money-box"><select id="pCat"></select></div>
+      </div>
       <div class="two">
         <div class="field">
           <label for="pCosto">Costo</label>
@@ -383,6 +474,12 @@
       <div class="nota-ro">El stock se carga desde Movimientos → Cargar compras.</div>
       <button class="add-btn" id="btnGuardarProd">Guardar producto</button>
       <button class="ghost-btn" id="btnCancelarProd">Cancelar</button>
+    </div>
+
+    <div class="buscar">
+      <input type="text" id="buscaProd" maxlength="40" placeholder="Buscar producto" autocomplete="off" aria-label="Buscar producto">
+      <span class="buscar-ico" id="buscaIcono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <button type="button" class="buscar-x" id="buscaLimpiar" aria-label="Borrar búsqueda" hidden>✕</button>
     </div>
 
     <div id="listaProd"></div>
@@ -506,7 +603,7 @@
   <section class="panel" id="panel-resumen">
     <div class="caja">
       <div><div class="c-label">Caja de efectivo</div><div class="c-value" id="rCaja">$ 0</div></div>
-      <div><div class="c-label">Mercadería a costo</div><div class="c-value small" id="rMerc">$ 0</div></div>
+      <div><div class="c-label">Valor costo de stock actual</div><div class="c-value small" id="rMerc">$ 0</div></div>
       <div class="c-sub">Caja = ventas − compras ± aportes y retiros. No depende del período.</div>
     </div>
 
@@ -543,21 +640,43 @@
     </div>
   </div>
 </div>
+<div class="sheet" id="cfgSheet">
+  <div class="sheet-box">
+    <div class="sheet-head">
+      <div class="t">Categorías de productos</div>
+      <button class="x-btn" id="cfgCerrar" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="nota-ro">Agrupan los productos en la pestaña Productos (por ejemplo: Oro, Plata, Acero blanco).</div>
+    <div class="cat-add">
+      <input type="text" id="catNueva" maxlength="30" placeholder="Nueva categoría" autocomplete="off" autocapitalize="sentences">
+      <button type="button" id="btnCatAgregar">Agregar</button>
+    </div>
+    <div id="catLista"></div>
+    <button class="add-btn" id="cfgListo">Listo</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
 (function(){
   const KEY_MOV = 'tulum_movimientos_v1';
   const KEY_PROD = 'tulum_productos_v1';
+  const KEY_CAT = 'tulum_categorias_v1';
+  const KEY_COL = 'tulum_cat_colapsadas_v1';
   const leer = (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e){ return []; } };
   let movs = leer(KEY_MOV);
+  const leerObj = (k) => { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch(e){ return {}; } };
   let productos = leer(KEY_PROD);
+  let categorias = leer(KEY_CAT);
+  let colapsadas = leerObj(KEY_COL);
   let filtroMov = 'todos';
   let periodo = 'hoy';
 
   const $ = id => document.getElementById(id);
   const saveMovs = () => { try { localStorage.setItem(KEY_MOV, JSON.stringify(movs)); } catch(e){ showToast('No se pudo guardar'); } };
   const saveProds = () => { try { localStorage.setItem(KEY_PROD, JSON.stringify(productos)); } catch(e){ showToast('No se pudo guardar'); } };
+  const saveCats = () => { try { localStorage.setItem(KEY_CAT, JSON.stringify(categorias)); } catch(e){ showToast('No se pudo guardar'); } };
+  const saveCol = () => { try { localStorage.setItem(KEY_COL, JSON.stringify(colapsadas)); } catch(e){} };
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 
   // ---------- Formato ----------
@@ -578,6 +697,7 @@
 
   // ---------- Pestañas ----------
   function irATab(nombre){
+    if(typeof cerrarCfg === 'function') cerrarCfg();
     document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('active', x.dataset.tab === nombre));
     document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + nombre));
     renderAll();
@@ -600,10 +720,10 @@
     const nombre = pNombre.value.trim();
     if(!nombre){ showToast('Poné el nombre del producto'); pNombre.focus(); return; }
     if(productos.some(p => p.nombre.toLowerCase() === nombre.toLowerCase())){ showToast('Ese producto ya existe'); return; }
-    productos.push({ id: uid(), nombre, stock0: 0, costo: soloNum(pCosto.value), precio: soloNum(pPrecio.value) });
+    productos.push({ id: uid(), nombre, stock0: 0, categoriaId: $('pCat').value || '', costo: soloNum(pCosto.value), precio: soloNum(pPrecio.value) });
     productos.sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
     saveProds();
-    pNombre.value = ''; pCosto.value = ''; pPrecio.value = '';
+    pNombre.value = ''; pCosto.value = ''; pPrecio.value = ''; $('pCat').value = '';
     toggleFormProd(false);
     renderAll();
     showToast('Producto guardado');
@@ -625,29 +745,68 @@
   }
   function stockDe(p){ return (p.stock0 || 0) + netoDe(p); }
 
+  function fillCatSelects(){
+    const sel = $('pCat'), v = sel.value;
+    sel.innerHTML = '<option value="">Sin categoría</option>' +
+      categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('');
+    sel.value = categorias.some(c => c.id === v) ? v : '';
+    $('pCatField').style.display = categorias.length ? 'block' : 'none';
+  }
+
+  function filaProd(p){
+    const st = stockDe(p);
+    const nom = escapeHtml(p.nombre);
+    const opts = '<option value="">Sin categoría</option>' + categorias.map(c =>
+      `<option value="${c.id}" ${c.id === p.categoriaId ? 'selected' : ''}>${escapeHtml(c.nombre)}</option>`).join('');
+    return `
+    <div class="prod-row" data-id="${p.id}">
+      <div class="pr-top">
+        <span class="pr-name">${nom}</span>
+        <button class="x-btn" data-delprod="${p.id}" aria-label="Eliminar producto">✕</button>
+      </div>
+      <div class="pr-fields">
+        <div><span class="pr-lab">Stock</span><div class="stock-ro ${st <= 0 ? 'low' : ''}" aria-label="Stock de ${nom}">${st}</div></div>
+        <div><span class="pr-lab">Costo</span><div class="pr-field"><span>$</span><input type="text" inputmode="numeric" data-k="costo" value="${fmtMiles(p.costo)}" aria-label="Costo de ${nom}"></div></div>
+        <div><span class="pr-lab">Precio</span><div class="pr-field"><span>$</span><input type="text" inputmode="numeric" data-k="precio" value="${fmtMiles(p.precio)}" aria-label="Precio de ${nom}"></div></div>
+      </div>
+      <div class="pr-bottom">
+        <div class="pr-gain ${p.precio - p.costo < 0 ? 'neg' : ''}">${textoGanancia(p)}</div>
+        ${categorias.length ? `<div class="pr-cat"><select data-cat aria-label="Categoría de ${nom}">${opts}</select></div>` : ''}
+      </div>
+    </div>`;
+  }
+
   function renderProductos(){
+    fillCatSelects();
     const box = $('listaProd');
     if(!productos.length){
-      box.innerHTML = '<div class="empty">Todavía no cargaste productos.<br>Agregá los que vendas con su stock, costo y precio.</div>';
+      box.innerHTML = '<div class="empty">Todavía no cargaste productos.<br>Agregá los que vendas con su costo y precio.</div>';
       return;
     }
-    box.innerHTML = productos.map(p => {
-      const st = stockDe(p);
-      const nom = escapeHtml(p.nombre);
-      return `
-      <div class="prod-row" data-id="${p.id}">
-        <div class="pr-top">
-          <span class="pr-name">${nom}</span>
-          <button class="x-btn" data-delprod="${p.id}" aria-label="Eliminar producto">✕</button>
-        </div>
-        <div class="pr-fields">
-          <div><span class="pr-lab">Stock</span><div class="stock-ro ${st <= 0 ? 'low' : ''}" aria-label="Stock de ${nom}">${st}</div></div>
-          <div><span class="pr-lab">Costo</span><div class="pr-field"><span>$</span><input type="text" inputmode="numeric" data-k="costo" value="${fmtMiles(p.costo)}" aria-label="Costo de ${nom}"></div></div>
-          <div><span class="pr-lab">Precio</span><div class="pr-field"><span>$</span><input type="text" inputmode="numeric" data-k="precio" value="${fmtMiles(p.precio)}" aria-label="Precio de ${nom}"></div></div>
-        </div>
-        <div class="pr-gain ${p.precio - p.costo < 0 ? 'neg' : ''}">${textoGanancia(p)}</div>
-      </div>`;
-    }).join('');
+    const q = normBusqueda($('buscaProd').value);
+    const catNombre = id => (categorias.find(c => c.id === id) || {}).nombre || '';
+    const lista = productos.filter(p => !q || normBusqueda(p.nombre).includes(q) || normBusqueda(catNombre(p.categoriaId)).includes(q));
+    if(!lista.length){
+      box.innerHTML = '<div class="empty">Ningún producto coincide con la búsqueda.</div>';
+      return;
+    }
+    // Sin categorías creadas: lista simple
+    if(!categorias.length){ box.innerHTML = lista.map(filaProd).join(''); return; }
+
+    const grupos = categorias.map(c => ({ id: c.id, nombre: c.nombre, items: lista.filter(p => p.categoriaId === c.id) }));
+    grupos.push({ id: 'sin', nombre: 'Sin categoría', items: lista.filter(p => !categorias.some(c => c.id === p.categoriaId)) });
+    const chev = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+    box.innerHTML = grupos
+      .filter(g => g.items.length || (!q && g.id !== 'sin'))
+      .map(g => {
+        // Al buscar, los grupos con resultados se muestran abiertos
+        const cerrado = !q && !!colapsadas[g.id];
+        return `
+        <div class="grp">
+          <button type="button" class="grp-head ${cerrado ? 'cerrada' : ''}" data-grp="${g.id}" aria-expanded="${!cerrado}">${chev}<span class="grp-name">${escapeHtml(g.nombre)}</span><span class="grp-n">${g.items.length}</span></button>
+          ${cerrado ? '' : (g.items.length ? g.items.map(filaProd).join('') : '<div class="grp-vacio">Sin productos</div>')}
+        </div>`;
+      }).join('');
   }
 
   // Edición sin volver a dibujar la lista (así no se pierde el cursor)
@@ -1030,6 +1189,7 @@
   document.addEventListener('click', e => {
     const bm = e.target.closest('[data-delmov]');
     const bp = e.target.closest('[data-delprod]');
+    const bc = e.target.closest('[data-delcat]');
     if(bm){
       pendiente = { tipo:'mov', id: bm.dataset.delmov };
       const m = movs.find(x => x.id === pendiente.id);
@@ -1040,6 +1200,11 @@
       pendiente = { tipo:'prod', id: bp.dataset.delprod };
       const p = productos.find(x => x.id === pendiente.id);
       $('confirmMsg').textContent = `¿Eliminar "${p ? p.nombre : 'el producto'}"? Las ventas y compras ya cargadas se mantienen.`;
+    } else if(bc){
+      pendiente = { tipo:'cat', id: bc.dataset.delcat };
+      const c = categorias.find(x => x.id === pendiente.id);
+      const n = productos.filter(p => p.categoriaId === pendiente.id).length;
+      $('confirmMsg').textContent = `¿Eliminar la categoría "${c ? c.nombre : ''}"?` + (n ? ` Sus ${n} producto${n === 1 ? '' : 's'} quedan sin categoría.` : '');
     } else return;
     $('confirm').classList.add('show');
   });
@@ -1047,6 +1212,12 @@
   $('confirmSi').addEventListener('click', () => {
     if(pendiente){
       if(pendiente.tipo === 'mov'){ movs = movs.filter(m => m.id !== pendiente.id); saveMovs(); }
+      else if(pendiente.tipo === 'cat'){
+        categorias = categorias.filter(c => c.id !== pendiente.id);
+        productos.forEach(p => { if(p.categoriaId === pendiente.id) p.categoriaId = ''; });
+        delete colapsadas[pendiente.id];
+        saveCats(); saveProds(); saveCol();
+      }
       else { productos = productos.filter(p => p.id !== pendiente.id); saveProds(); }
       renderAll();
       showToast('Eliminado');
@@ -1065,7 +1236,99 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
   }
 
+  // ================= CATEGORÍAS (material) =================
+  const nombreCatRepetido = (n, exceptoId) =>
+    categorias.some(c => c.id !== exceptoId && normBusqueda(c.nombre) === normBusqueda(n));
+
+  function renderCats(){
+    const box = $('catLista');
+    if(!categorias.length){
+      box.innerHTML = '<div class="empty">Todavía no creaste categorías.<br>Agregá la primera arriba (ej: Oro, Plata, Acero blanco).</div>';
+      return;
+    }
+    box.innerHTML = categorias.map(c => {
+      const n = productos.filter(p => p.categoriaId === c.id).length;
+      return `<div class="cat-row"><input type="text" data-catid="${c.id}" maxlength="30" value="${escapeHtml(c.nombre)}" aria-label="Nombre de la categoría" autocomplete="off"><span class="cat-n" title="Productos">${n}</span><button class="x-btn" data-delcat="${c.id}" aria-label="Eliminar categoría">✕</button></div>`;
+    }).join('');
+  }
+
+  const abrirCfg = () => {
+    renderCats();
+    // La hoja arranca justo debajo de las pestañas principales
+    const t = document.querySelector('nav.tabs').getBoundingClientRect();
+    $('cfgSheet').style.top = Math.max(0, Math.round(t.bottom + 8)) + 'px';
+    $('cfgSheet').classList.add('show');
+  };
+  const cerrarCfg = () => $('cfgSheet').classList.remove('show');
+  $('btnCfg').addEventListener('click', abrirCfg);
+  $('cfgCerrar').addEventListener('click', cerrarCfg);
+  $('cfgListo').addEventListener('click', cerrarCfg);
+  $('cfgSheet').addEventListener('click', e => { if(e.target === $('cfgSheet')) cerrarCfg(); });
+
+  function agregarCat(){
+    const inp = $('catNueva'), nombre = inp.value.trim();
+    if(!nombre){ showToast('Escribí el nombre'); inp.focus(); return; }
+    if(nombreCatRepetido(nombre)){ showToast('Esa categoría ya existe'); return; }
+    categorias.push({ id: uid(), nombre });
+    saveCats();
+    inp.value = '';
+    renderCats(); renderProductos();
+    inp.focus();
+  }
+  $('btnCatAgregar').addEventListener('click', agregarCat);
+  $('catNueva').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); agregarCat(); } });
+  $('catLista').addEventListener('change', e => {
+    const inp = e.target.closest('input[data-catid]');
+    if(!inp) return;
+    const c = categorias.find(x => x.id === inp.dataset.catid);
+    if(!c) return;
+    const nombre = inp.value.trim();
+    if(!nombre || nombreCatRepetido(nombre, c.id)){
+      showToast(nombre ? 'Esa categoría ya existe' : 'El nombre no puede quedar vacío');
+      inp.value = c.nombre;
+      return;
+    }
+    c.nombre = nombre;
+    saveCats();
+    renderProductos();
+  });
+
+  // Plegar / desplegar grupos y cambiar la categoría de un producto
+  $('listaProd').addEventListener('click', e => {
+    const h = e.target.closest('[data-grp]');
+    if(!h) return;
+    const id = h.dataset.grp;
+    if(colapsadas[id]) delete colapsadas[id]; else colapsadas[id] = true;
+    saveCol();
+    renderProductos();
+  });
+  $('listaProd').addEventListener('change', e => {
+    const sel = e.target.closest('select[data-cat]');
+    if(!sel) return;
+    const p = productos.find(x => x.id === sel.closest('.prod-row').dataset.id);
+    if(!p) return;
+    p.categoriaId = sel.value;
+    saveProds();
+    renderProductos();
+  });
+
+  // Buscador de productos
+  const buscaProd = $('buscaProd');
+  function actualizarBuscador(){
+    const hay = buscaProd.value !== '';
+    $('buscaLimpiar').hidden = !hay;
+    $('buscaIcono').hidden = hay;
+  }
+  buscaProd.addEventListener('input', () => { actualizarBuscador(); renderProductos(); });
+  $('buscaLimpiar').addEventListener('click', () => {
+    buscaProd.value = '';
+    actualizarBuscador();
+    renderProductos();
+    buscaProd.focus();
+  });
+
   function renderAll(){
+    renderCats();
     renderProductos();
     renderMovimientos();
     renderCaja();
