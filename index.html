@@ -242,6 +242,20 @@
     font-weight:700; font-size:13px; cursor:pointer;
   }
   .chips button.active{border-color:var(--accent); background:var(--accent-soft); color:var(--accent-dark);}
+  .chips.wrap{flex-wrap:wrap;}
+  .chips.wrap button.full{flex:1 1 100%;}
+  .rango{
+    display:none; gap:12px; background:var(--surface); border-radius:12px; padding:12px 14px;
+    margin-bottom:14px; box-shadow:0 1px 2px rgba(27,42,58,0.06);
+  }
+  .rango.show{display:flex;}
+  .rango .field{flex:1; min-width:0; margin-bottom:0;}
+  .rango input[type=date]{
+    width:100%; margin-top:4px; border:none; border-bottom:1.5px solid var(--line); border-radius:0;
+    padding:8px 2px; font-family:'Inter',sans-serif; font-weight:700; font-size:15px;
+    color:var(--ink); background:transparent; min-height:38px;
+  }
+  .rango input[type=date]:focus{outline:none; border-color:var(--accent);}
 
   .empty{
     text-align:center; color:var(--ink-soft); font-size:13px; padding:22px 10px;
@@ -377,8 +391,12 @@
   .caja .c-value.neg{color:var(--red);}
   .caja .c-sub{grid-column:1 / -1; font-size:11.5px; color:var(--ink-soft); border-top:1.5px dashed var(--line); padding-top:10px;}
 
-  .tag.retiro, .tag.aporte{background:var(--accent-soft); color:var(--accent-dark);}
-  .m-monto.retiro, .m-monto.aporte{color:var(--accent-dark);}
+  .tag.retiro{background:#FBE7C2; color:#7A4E08;}
+  .tag.aporte{background:var(--accent-soft); color:var(--accent-dark);}
+  .m-monto.retiro{color:#A8680C;}
+  .m-monto.aporte{color:var(--accent-dark);}
+  #chipsCaja button[data-c="retiro"].active{border-color:#D9A441; background:#FBE7C2; color:#7A4E08;}
+  #chipsCaja button[data-c="aporte"].active{border-color:var(--accent); background:var(--accent-soft); color:var(--accent-dark);}
 
   /* ---- Tabla de movimientos ---- */
   .table-card{background:var(--surface); border-radius:var(--radius); overflow:hidden; box-shadow:0 1px 2px rgba(27,42,58,0.06);}
@@ -628,11 +646,16 @@
       <div class="c-sub">Caja = ventas − compras ± aportes y retiros. No depende del período.</div>
     </div>
 
-    <div class="chips" id="chipsPeriodo">
+    <div class="chips wrap" id="chipsPeriodo">
       <button class="active" data-p="hoy">Hoy</button>
       <button data-p="semana">Semana</button>
       <button data-p="mes">Mes</button>
       <button data-p="todo">Todo</button>
+      <button class="full" data-p="custom">Personalizado</button>
+    </div>
+    <div class="rango" id="rangoCustom">
+      <div class="field"><label for="rDesde">Desde</label><input type="date" id="rDesde"></div>
+      <div class="field"><label for="rHasta">Hasta</label><input type="date" id="rHasta"></div>
     </div>
 
     <div class="hero">
@@ -1166,9 +1189,39 @@
     b.addEventListener('click', () => {
       periodo = b.dataset.p;
       document.querySelectorAll('#chipsPeriodo button').forEach(x => x.classList.toggle('active', x === b));
+      $('rangoCustom').classList.toggle('show', periodo === 'custom');
       renderResumen();
     });
   });
+
+  // Rango personalizado (por defecto: del 1° del mes a hoy)
+  const aISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const deISO = (v, finDia) => {
+    if(!v) return null;
+    const [y, m, d] = v.split('-').map(Number);
+    return finDia ? new Date(y, m-1, d, 23, 59, 59, 999) : new Date(y, m-1, d);
+  };
+  (function(){
+    const hoy = new Date();
+    $('rDesde').value = aISO(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+    $('rHasta').value = aISO(hoy);
+    ['rDesde','rHasta'].forEach(id => $(id).addEventListener('change', renderResumen));
+  })();
+
+  function hastaPeriodo(){
+    return new Date(8640000000000000); // sin tope
+  }
+
+  // Devuelve [desde, hasta] según el período elegido
+  function rangoActual(){
+    if(periodo === 'custom'){
+      let d = deISO($('rDesde').value, false) || new Date(0);
+      let h = deISO($('rHasta').value, true) || hastaPeriodo();
+      if(d > h){ const t = deISO($('rHasta').value, false); d = t; h = deISO($('rDesde').value, true); }
+      return [d, h];
+    }
+    return [desdePeriodo(), hastaPeriodo()];
+  }
 
   function desdePeriodo(){
     const ahora = new Date();
@@ -1179,8 +1232,8 @@
   }
 
   function renderResumen(){
-    const desde = desdePeriodo();
-    const lista = movs.filter(m => new Date(m.fecha) >= desde);
+    const [desde, hasta] = rangoActual();
+    const lista = movs.filter(m => { const f = new Date(m.fecha); return f >= desde && f <= hasta; });
     const ventas = lista.filter(m => m.tipo === 'venta');
     const compras = lista.filter(m => m.tipo === 'compra');
 
