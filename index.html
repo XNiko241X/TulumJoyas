@@ -68,6 +68,11 @@
   }
   .cfg-btn svg{width:18px; height:18px;}
   .cfg-btn:active{background:var(--accent-soft); color:var(--accent-dark);}
+  .top-btns{display:flex; gap:8px;}
+  .cfg-btn:disabled{opacity:.6; cursor:default;}
+  .cfg-btn.girando svg{animation:girar .8s linear infinite;}
+  @keyframes girar{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.cfg-btn.girando svg{animation:none;}}
 
   nav.tabs{
     display:flex; background:var(--surface); border-radius:999px; padding:4px;
@@ -498,9 +503,14 @@
       <h1>Tulum</h1>
       <span class="biz-name">Joyas</span>
     </div>
+    <div class="top-btns">
+    <button class="cfg-btn" id="btnSync" aria-label="Actualizar datos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </button>
     <button class="cfg-btn" id="btnCfg" aria-label="Configurar categorías">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
     </button>
+    </div>
   </header>
 
   <nav class="tabs">
@@ -749,7 +759,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-  collection, doc, onSnapshot, writeBatch
+  collection, doc, onSnapshot, writeBatch, getDocsFromServer
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1668,6 +1678,23 @@ const db = initializeFirestore(fbApp, {
     cerrarCfg();
     subirPendientes();
     try { await signOut(auth); } catch(e){ showToast('No se pudo cerrar la sesión'); }
+  });
+
+  // Botón Actualizar: sube lo pendiente y pide los datos al servidor (no a la caché del celular)
+  $('btnSync').addEventListener('click', async () => {
+    if(!sesion) return;
+    const btn = $('btnSync');
+    btn.disabled = true; btn.classList.add('girando');
+    try {
+      subirPendientes();
+      // Al traer los datos del servidor, la escucha en tiempo real se actualiza sola
+      await Promise.all(COLS.map(c => getDocsFromServer(collection(db, c))));
+      showToast('Datos actualizados');
+    } catch(e){
+      console.error('Actualizar', e);
+      showToast(navigator.onLine ? 'No se pudo actualizar' : 'Sin conexión: no se pudo actualizar');
+    }
+    btn.classList.remove('girando'); btn.disabled = false;
   });
 
   onAuthStateChanged(auth, user => {

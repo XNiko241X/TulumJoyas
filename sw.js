@@ -2,7 +2,7 @@
 // Archivos propios: se sirven de la caché al instante y se actualizan en segundo plano.
 // Recursos externos (fuentes): cache-first, para que se vea igual sin internet.
 
-const CACHE_NAME = 'tulum-v5';
+const CACHE_NAME = 'tulum-v6';
 
 const CORE_ASSETS = [
   './',
