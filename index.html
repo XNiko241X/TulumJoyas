@@ -465,6 +465,29 @@
     box-shadow:0 4px 14px rgba(0,0,0,0.2); transition:transform .25s ease; z-index:100; white-space:nowrap;
   }
   .toast.show{transform:translateX(-50%) translateY(0);}
+  /* ---- Login ---- */
+  .login{
+    position:fixed; inset:0; z-index:200; background:var(--bg);
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .login[hidden]{display:none;}
+  .login-box{
+    width:100%; max-width:360px; background:var(--surface); border-radius:var(--radius);
+    padding:24px 20px; box-shadow:0 1px 2px rgba(27,42,58,0.06);
+  }
+  .login-box h2{margin:0 0 4px; font-weight:800; font-size:24px; letter-spacing:-0.01em;}
+  .login-box .login-sub{margin:0 0 18px; font-size:13px; color:var(--ink-soft);}
+  .login.cargando form{display:none;}
+  .login.cargando .login-sub{margin-bottom:0;}
+  .login .field input{
+    width:100%; border:none; border-bottom:1.5px solid var(--line); border-radius:0;
+    padding:8px 2px; font-family:'Inter',sans-serif; font-weight:700; font-size:16px;
+    color:var(--ink); background:transparent; margin-top:4px;
+  }
+  .login .field input:focus{outline:none; border-color:var(--accent);}
+  .login .add-btn:disabled{opacity:.6; cursor:default;}
+  .login-err{color:var(--red); font-size:13px; font-weight:600; min-height:18px; margin-top:12px;}
+
   button:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--mustard); outline-offset:2px;}
 </style>
 </head>
@@ -697,29 +720,74 @@
     </div>
     <div id="catLista"></div>
     <button class="add-btn" id="cfgListo">Listo</button>
+    <div class="nota-ro" id="cfgUsuario" style="margin:14px 0 0; text-align:center;"></div>
+    <button class="ghost-btn" id="btnSalir">Cerrar sesión</button>
+  </div>
+</div>
+<div class="login cargando" id="login">
+  <div class="login-box">
+    <h2>Tulum</h2>
+    <p class="login-sub" id="loginSub">Cargando…</p>
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="lMail">Email</label>
+        <input type="email" id="lMail" autocomplete="username" autocapitalize="off" autocorrect="off" inputmode="email">
+      </div>
+      <div class="field">
+        <label for="lPass">Contraseña</label>
+        <input type="password" id="lPass" autocomplete="current-password">
+      </div>
+      <button type="submit" class="add-btn" id="btnLogin">Entrar</button>
+      <div class="login-err" id="loginErr" role="alert"></div>
+    </form>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  collection, doc, onSnapshot, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAL-tQrl7srrSDCsqwOKttC445-W18NuFw",
+  authDomain: "tulum-joyas.firebaseapp.com",
+  projectId: "tulum-joyas",
+  storageBucket: "tulum-joyas.firebasestorage.app",
+  messagingSenderId: "639047454290",
+  appId: "1:639047454290:web:d07f8c49bff4ef2581198b"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+// Caché local persistente: la app abre y deja cargar movimientos sin internet
+const db = initializeFirestore(fbApp, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+
 (function(){
   const KEY_MOV = 'tulum_movimientos_v1';
   const KEY_PROD = 'tulum_productos_v1';
   const KEY_CAT = 'tulum_categorias_v1';
   const KEY_COL = 'tulum_cat_colapsadas_v1';
   const leer = (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e){ return []; } };
-  let movs = leer(KEY_MOV);
+  // Datos viejos guardados en este celular (solo se usan una vez para subirlos a la nube)
+  const localesViejos = { movimientos: leer(KEY_MOV), productos: leer(KEY_PROD), categorias: leer(KEY_CAT) };
+  let movs = [];
   const leerObj = (k) => { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch(e){ return {}; } };
-  let productos = leer(KEY_PROD);
-  let categorias = leer(KEY_CAT);
+  let productos = [];
+  let categorias = [];
   let colapsadas = leerObj(KEY_COL);
   let filtroMov = 'todos';
   let periodo = 'hoy';
 
   const $ = id => document.getElementById(id);
-  const saveMovs = () => { try { localStorage.setItem(KEY_MOV, JSON.stringify(movs)); } catch(e){ showToast('No se pudo guardar'); } };
-  const saveProds = () => { try { localStorage.setItem(KEY_PROD, JSON.stringify(productos)); } catch(e){ showToast('No se pudo guardar'); } };
-  const saveCats = () => { try { localStorage.setItem(KEY_CAT, JSON.stringify(categorias)); } catch(e){ showToast('No se pudo guardar'); } };
+  // Los datos viven en Firestore; estas funciones programan la subida de lo que cambió
+  const saveMovs = () => programarSync('movimientos');
+  const saveProds = () => programarSync('productos');
+  const saveCats = () => programarSync('categorias');
   const saveCol = () => { try { localStorage.setItem(KEY_COL, JSON.stringify(colapsadas)); } catch(e){} };
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 
@@ -1455,6 +1523,169 @@
     renderCaja();
     renderResumen();
   }
+
+  // ================= NUBE (Firebase) =================
+  const COLS = ['movimientos', 'productos', 'categorias'];
+  const getLista = col => col === 'movimientos' ? movs : (col === 'productos' ? productos : categorias);
+  const setLista = (col, arr) => {
+    if(col === 'movimientos') movs = arr; else if(col === 'productos') productos = arr; else categorias = arr;
+  };
+  const firma = o => JSON.stringify(o, Object.keys(o).sort());
+  const limpio = o => JSON.parse(JSON.stringify(o)); // saca los undefined (Firestore no los acepta)
+
+  const base = { movimientos: {}, productos: {}, categorias: {} }; // id -> firma de lo último sincronizado
+  const timers = {}, ultimaSnap = {}, cargadas = {};
+  let sesion = null, desuscribir = [], migrado = false;
+  const KEY_MIG = 'tulum_nube_migrada_v1';
+
+  function ordenar(col, arr){
+    if(col === 'movimientos') arr.sort((a, b) => a.fecha < b.fecha ? 1 : (a.fecha > b.fecha ? -1 : (a.id < b.id ? 1 : -1)));
+    else if(col === 'productos') arr.sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'));
+    else arr.sort((a, b) => a.id < b.id ? -1 : 1);
+    return arr;
+  }
+
+  function mismosDatos(lista, arr){
+    if(lista.length !== arr.length) return false;
+    const m = {};
+    lista.forEach(it => { m[it.id] = firma(limpio(it)); });
+    return arr.every(it => m[it.id] === firma(it));
+  }
+
+  // Pasa lo último que llegó de la nube a la pantalla (si hay algo distinto)
+  function aplicar(col){
+    const snap = ultimaSnap[col];
+    if(!snap) return;
+    const arr = ordenar(col, snap.map(x => ({ ...x })));
+    base[col] = {};
+    arr.forEach(it => { base[col][it.id] = firma(it); });
+    if(mismosDatos(getLista(col), arr)) return; // nada que redibujar (evita perder el cursor al escribir)
+    setLista(col, arr);
+    renderAll();
+  }
+
+  function escuchar(col){
+    return onSnapshot(collection(db, col), snap => {
+      ultimaSnap[col] = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      cargadas[col] = true;
+      // Si hay cambios locales sin subir, no se pisan: se aplica la nube cuando termine la subida
+      if(!timers[col]) aplicar(col);
+      if(COLS.every(c => cargadas[c])) migrarSiHaceFalta();
+    }, err => {
+      console.error('Firestore', col, err);
+      showToast(err.code === 'permission-denied' ? 'Sin permiso para leer los datos' : 'Error de conexión con la nube');
+    });
+  }
+
+  function programarSync(col){
+    clearTimeout(timers[col]);
+    timers[col] = setTimeout(() => sincronizar(col), 400);
+  }
+
+  // Sube solo lo que cambió (altas/ediciones) y borra lo que se eliminó
+  async function sincronizar(col){
+    clearTimeout(timers[col]); timers[col] = null;
+    if(!sesion) return;
+    if(!cargadas[col]){ programarSync(col); return; }
+    const ops = [], nueva = {};
+    getLista(col).forEach(it => {
+      const d = limpio(it), f = firma(d);
+      nueva[it.id] = f;
+      if(base[col][it.id] !== f) ops.push({ id: it.id, d });
+    });
+    Object.keys(base[col]).forEach(id => { if(!nueva[id]) ops.push({ id, borrar: true }); });
+    base[col] = nueva;
+    if(!ops.length){ aplicar(col); return; }
+    try {
+      const lotes = [];
+      for(let i = 0; i < ops.length; i += 400){
+        const batch = writeBatch(db);
+        ops.slice(i, i + 400).forEach(o => {
+          if(o.borrar) batch.delete(doc(db, col, o.id)); else batch.set(doc(db, col, o.id), o.d);
+        });
+        lotes.push(batch);
+      }
+      await Promise.all(lotes.map(b => b.commit()));
+    } catch(e){
+      console.error('Firestore', col, e);
+      showToast('No se pudo guardar en la nube');
+    }
+  }
+  const subirPendientes = () => COLS.forEach(c => { if(timers[c]) sincronizar(c); });
+  document.addEventListener('visibilitychange', () => { if(document.hidden) subirPendientes(); });
+  window.addEventListener('pagehide', subirPendientes);
+
+  // Primera vez en este celular: si la nube está vacía y había datos locales, se suben
+  function migrarSiHaceFalta(){
+    if(migrado) return;
+    migrado = true;
+    let hecho = false;
+    try { hecho = !!localStorage.getItem(KEY_MIG); } catch(e){}
+    if(hecho) return;
+    try { localStorage.setItem(KEY_MIG, '1'); } catch(e){}
+    const nubeVacia = COLS.every(c => !(ultimaSnap[c] || []).length);
+    const hayLocal = COLS.some(c => localesViejos[c].length);
+    if(!nubeVacia || !hayLocal) return;
+    COLS.forEach(c => { setLista(c, ordenar(c, localesViejos[c].slice())); programarSync(c); });
+    renderAll();
+    showToast('Datos de este celular subidos a la nube');
+  }
+
+  function iniciarNube(){
+    detenerNube();
+    desuscribir = COLS.map(escuchar);
+  }
+  function detenerNube(){
+    desuscribir.forEach(f => f());
+    desuscribir = [];
+    migrado = false;
+    COLS.forEach(c => { clearTimeout(timers[c]); timers[c] = null; base[c] = {}; ultimaSnap[c] = null; cargadas[c] = false; });
+  }
+
+  // ---- Login ----
+  const loginEl = $('login');
+  const ERR_LOGIN = {
+    'auth/invalid-credential': 'Email o contraseña incorrectos',
+    'auth/wrong-password': 'Email o contraseña incorrectos',
+    'auth/user-not-found': 'Email o contraseña incorrectos',
+    'auth/invalid-email': 'El email no es válido',
+    'auth/user-disabled': 'Esta cuenta está desactivada',
+    'auth/too-many-requests': 'Demasiados intentos. Esperá un rato y probá de nuevo',
+    'auth/network-request-failed': 'Sin conexión. Revisá tu internet'
+  };
+  $('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const mail = $('lMail').value.trim(), pass = $('lPass').value;
+    const err = $('loginErr');
+    if(!mail || !pass){ err.textContent = 'Completá el email y la contraseña'; return; }
+    const btn = $('btnLogin');
+    btn.disabled = true; err.textContent = '';
+    try { await signInWithEmailAndPassword(auth, mail, pass); }
+    catch(ex){ err.textContent = ERR_LOGIN[ex.code] || 'No se pudo ingresar. Probá de nuevo'; }
+    btn.disabled = false;
+  });
+  $('btnSalir').addEventListener('click', async () => {
+    cerrarCfg();
+    subirPendientes();
+    try { await signOut(auth); } catch(e){ showToast('No se pudo cerrar la sesión'); }
+  });
+
+  onAuthStateChanged(auth, user => {
+    sesion = user;
+    loginEl.classList.remove('cargando');
+    if(user){
+      loginEl.hidden = true;
+      $('cfgUsuario').textContent = 'Sesión: ' + (user.email || '');
+      iniciarNube();
+    } else {
+      detenerNube();
+      movs = []; productos = []; categorias = [];
+      renderAll();
+      $('loginSub').textContent = 'Ingresá con tu usuario';
+      $('lPass').value = '';
+      loginEl.hidden = false;
+    }
+  });
 
   previewVenta();
   previewCompra();

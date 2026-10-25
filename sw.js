@@ -2,7 +2,7 @@
 // Archivos propios: se sirven de la caché al instante y se actualizan en segundo plano.
 // Recursos externos (fuentes): cache-first, para que se vea igual sin internet.
 
-const CACHE_NAME = 'tulum-v4';
+const CACHE_NAME = 'tulum-v5';
 
 const CORE_ASSETS = [
   './',
@@ -17,6 +17,10 @@ const CORE_ASSETS = [
 const EXTERNAL_ASSETS = [
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap'
 ];
+
+// Únicos sitios externos que se cachean (fuentes y librerías de Firebase).
+// Firestore, Auth y el resto de las APIs van directo a la red.
+const HOSTS_CACHEABLES = ['fonts.googleapis.com', 'fonts.gstatic.com', 'www.gstatic.com'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -48,7 +52,9 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  const mismoOrigen = new URL(req.url).origin === self.location.origin;
+  const url = new URL(req.url);
+  const mismoOrigen = url.origin === self.location.origin;
+  if (!mismoOrigen && !HOSTS_CACHEABLES.includes(url.hostname)) return;
 
   event.respondWith(
     caches.match(req).then((cached) => {
